@@ -1,0 +1,48 @@
+# IDE and Editor Files
+.idea/
+.vscode/
+.cursor/
+*.iml
+*.ipr
+*.iws
+
+# Dependency Directories
+**/node_modules/
+**/vendor/
+
+# Build and Output Directories
+**/build/
+**/.next/
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/out/
+**/coverage/
+**/.phpunit.cache/
+**/.phpunit.result.cache
+*.tsbuildinfo
+
+# Env/Secret Files
+**/.env
+**/.env.local
+**/.env.production
+**/.env.development
+**/.env.staging
+**/.env*.local
+**/auth.json
+
+# System and Logs
+*.log
+**/*.log
+.DS_Store
+Thumbs.db
+
+# Mobile Specific ignores
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.pub-cache/
+.pub/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+app.*.symbols
+app.*.map.json

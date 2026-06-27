@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "599762240617",
+    "project_id": "zone-e4bb4",
+    "storage_bucket": "zone-e4bb4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:599762240617:android:9493219b9140f5f9dccef8",
+        "android_client_info": {
+          "package_name": "com.wiperspace.crack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "599762240617-nureqkhmpd0c0vh7badk4kfv270r86e7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZzYgbmUdGqG_VWkUDCkB1DAeOgPY5-Zc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "599762240617-nureqkhmpd0c0vh7badk4kfv270r86e7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
