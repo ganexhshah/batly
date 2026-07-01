@@ -44,22 +44,25 @@ class BannerController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'prize_pool' => ['nullable', 'string', 'max:255'],
-            'date_text' => ['nullable', 'string', 'max:255'],
-            'is_live' => ['nullable', 'boolean'],
-            'is_active' => ['nullable', 'boolean'],
-            'image' => ['nullable', 'file', 'image', 'max:5120'],
-            'image_url' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $this->prepareBannerRequest($request);
+
+        $validated = $request->validate(
+            $this->bannerValidationRules(requireImage: true),
+            $this->bannerValidationMessages(),
+        );
 
         $imagePath = $this->resolveImagePath($request);
+        if ($imagePath === '') {
+            return response()->json([
+                'message' => 'An image file or image URL is required.',
+                'errors' => ['image' => ['An image file or image URL is required.']],
+            ], 422);
+        }
 
         $banner = Banner::create([
             'title' => $validated['title'],
-            'prize_pool' => $validated['prize_pool'] ?? null,
-            'date_text' => $validated['date_text'] ?? null,
+            'prize_pool' => $this->nullableString($validated['prize_pool'] ?? null),
+            'date_text' => $this->nullableString($validated['date_text'] ?? null),
             'is_live' => $request->boolean('is_live'),
             'is_active' => $request->boolean('is_active', true),
             'image_path' => $imagePath,
@@ -72,17 +75,21 @@ class BannerController extends Controller
 
     public function update(Request $request, Banner $banner): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['sometimes', 'string', 'max:255'],
-            'prize_pool' => ['nullable', 'string', 'max:255'],
-            'date_text' => ['nullable', 'string', 'max:255'],
-            'is_live' => ['nullable', 'boolean'],
-            'is_active' => ['nullable', 'boolean'],
-            'image' => ['nullable', 'file', 'image', 'max:5120'],
-            'image_url' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $this->prepareBannerRequest($request);
+
+        $validated = $request->validate(
+            $this->bannerValidationRules(requireImage: false),
+            $this->bannerValidationMessages(),
+        );
 
         $payload = collect($validated)->except(['image', 'image_url'])->all();
+
+        if (array_key_exists('prize_pool', $payload)) {
+            $payload['prize_pool'] = $this->nullableString($payload['prize_pool']);
+        }
+        if (array_key_exists('date_text', $payload)) {
+            $payload['date_text'] = $this->nullableString($payload['date_text']);
+        }
 
         if ($request->has('is_live')) {
             $payload['is_live'] = $request->boolean('is_live');
@@ -109,6 +116,73 @@ class BannerController extends Controller
         return response()->json(['message' => 'Banner deleted']);
     }
 
+    /** @return array<string, list<string>> */
+    private function bannerValidationRules(bool $requireImage): array
+    {
+        $imageRules = ['nullable', 'file', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'];
+        if ($requireImage) {
+            $imageRules[] = 'required_without:image_url';
+        }
+
+        return [
+            'title' => [$requireImage ? 'required' : 'sometimes', 'string', 'max:255'],
+            'prize_pool' => ['nullable', 'string', 'max:255'],
+            'date_text' => ['nullable', 'string', 'max:255'],
+            'image' => $imageRules,
+            'image_url' => array_filter([
+                'nullable',
+                'string',
+                'max:2000',
+                $requireImage ? 'required_without:image' : null,
+            ]),
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function bannerValidationMessages(): array
+    {
+        return [
+            'title.required' => 'Banner title is required.',
+            'image.required_without' => 'Upload an image file or provide an image URL.',
+            'image_url.required_without' => 'Upload an image file or provide an image URL.',
+            'image.mimes' => 'Banner image must be a JPEG, PNG, GIF, or WebP file.',
+            'image.max' => 'Banner image must be 5 MB or smaller.',
+        ];
+    }
+
+    private function nullableString(?string $value): ?string
+    {
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    /** Normalize multipart / camelCase banner fields before validation. */
+    private function prepareBannerRequest(Request $request): void
+    {
+        $aliases = [
+            'is_live' => 'isLive',
+            'is_active' => 'isActive',
+            'prize_pool' => 'prizePool',
+            'date_text' => 'dateText',
+            'image_url' => 'imageUrl',
+        ];
+
+        foreach ($aliases as $snake => $camel) {
+            if (! $request->has($snake) && $request->has($camel)) {
+                $request->merge([$snake => $request->input($camel)]);
+            }
+        }
+
+        if ($request->has('is_live')) {
+            $request->merge(['is_live' => $request->boolean('is_live')]);
+        }
+
+        if ($request->has('is_active')) {
+            $request->merge(['is_active' => $request->boolean('is_active')]);
+        }
+    }
+
     private function resolveImagePath(Request $request): string
     {
         if ($request->hasFile('image')) {
@@ -119,10 +193,10 @@ class BannerController extends Controller
         }
 
         if ($request->filled('image_url')) {
-            return (string) $request->input('image_url');
+            return trim((string) $request->input('image_url'));
         }
 
-        return 'assets/Untitled (1080 x 900 px) (1080 x 600 px).png';
+        return '';
     }
 
     private function formatBanner(Banner $banner): array

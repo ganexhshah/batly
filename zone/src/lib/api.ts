@@ -1,9 +1,18 @@
+import { formatApiError } from '@/lib/error-message';
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ?? 'http://localhost:8888/api';
 
 export const BACKEND_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_BASE_URL?.replace(/\/$/, '') ??
   API_BASE_URL.replace(/\/api$/, '');
+
+/** Admin carousel CRUD — works whether API base ends with `/api` or `/api/admin`. */
+export function adminHomeCarouselPath(suffix = ''): string {
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const prefix = base.endsWith('/admin') ? '/home-carousel' : '/admin/home-carousel';
+  return `${prefix}${suffix}`;
+}
 
 function getHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('battly_token') : null;
@@ -33,7 +42,7 @@ export async function apiGet(endpoint: string) {
   return response.json();
 }
 
-export async function apiPost(endpoint: string, body?: any) {
+export async function apiPost(endpoint: string, body?: unknown) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
     headers: getHeaders(),
@@ -58,12 +67,12 @@ export async function apiPostMultipart(endpoint: string, formData: FormData) {
   });
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.message || `API Error: ${response.status}`);
+    throw new Error(formatApiError(errData, `API Error: ${response.status}`));
   }
   return response.json();
 }
 
-export async function apiPatch(endpoint: string, body: any) {
+export async function apiPatch(endpoint: string, body: unknown) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'PATCH',
     headers: getHeaders(),
@@ -76,7 +85,7 @@ export async function apiPatch(endpoint: string, body: any) {
   return response.json();
 }
 
-export async function apiPut(endpoint: string, body: any) {
+export async function apiPut(endpoint: string, body: unknown) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'PUT',
     headers: getHeaders(),

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from 'sonner';
-import { API_BASE_URL, BACKEND_BASE_URL, apiDelete } from '@/lib/api';
+import { BACKEND_BASE_URL, adminHomeCarouselPath, apiDelete, apiPostMultipart } from '@/lib/api';
 import { useBanners, useInvalidateBanners, isInitialLoad } from '@/lib/admin-queries';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -77,7 +77,6 @@ export default function BannersPage() {
     if (error instanceof Error) {
       return error.message;
     }
-
     return 'Something went wrong';
   };
 
@@ -106,8 +105,8 @@ export default function BannersPage() {
       formData.append('title', title);
       formData.append('prize_pool', prizePool);
       formData.append('date_text', dateText);
-      formData.append('is_live', String(isLive));
-      formData.append('is_active', String(isActive));
+      formData.append('is_live', isLive ? 'true' : 'false');
+      formData.append('is_active', isActive ? 'true' : 'false');
 
       if (uploadMode === 'file' && imageFile) {
         formData.append('image', imageFile);
@@ -115,7 +114,7 @@ export default function BannersPage() {
         formData.append('image_url', imageUrl);
       }
 
-      await sendMultipartRequest(`${API_BASE_URL}/banners`, 'POST', formData);
+      await apiPostMultipart(adminHomeCarouselPath(), formData);
       toast.success('Banner created successfully');
       setIsCreateOpen(false);
       invalidateBanners();
@@ -150,25 +149,6 @@ export default function BannersPage() {
   const handleOpenDelete = (banner: Banner) => {
     setSelectedBanner(banner);
     setIsDeleteOpen(true);
-  };
-
-  // Helper to send multipart/form-data requests manually
-  const sendMultipartRequest = async (url: string, method: 'POST', formData: FormData) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('battly_token') : null;
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Accept': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.message || `API Error: ${response.status}`);
-    }
-    return response.json();
   };
 
   const isManagedBannerImage = (path: string) => {
@@ -220,8 +200,8 @@ export default function BannersPage() {
       formData.append('title', title);
       formData.append('prize_pool', prizePool);
       formData.append('date_text', dateText);
-      formData.append('is_live', String(isLive));
-      formData.append('is_active', String(isActive));
+      formData.append('is_live', isLive ? 'true' : 'false');
+      formData.append('is_active', isActive ? 'true' : 'false');
 
       if (uploadMode === 'file' && imageFile) {
         formData.append('image', imageFile);
@@ -230,7 +210,7 @@ export default function BannersPage() {
       }
 
       // PHP's PUT request does not parse multipart/form-data natively, so we POST to a custom endpoint
-      await sendMultipartRequest(`${API_BASE_URL}/banners/${selectedBanner.id}`, 'POST', formData);
+      await apiPostMultipart(adminHomeCarouselPath(`/${selectedBanner.id}`), formData);
       toast.success('Banner updated successfully');
       setIsEditOpen(false);
       invalidateBanners();
@@ -245,7 +225,7 @@ export default function BannersPage() {
     if (!selectedBanner) return;
     try {
       setSubmitting(true);
-      await apiDelete(`/banners/${selectedBanner.id}`);
+      await apiDelete(adminHomeCarouselPath(`/${selectedBanner.id}`));
       toast.success('Banner deleted successfully');
       setIsDeleteOpen(false);
       invalidateBanners();

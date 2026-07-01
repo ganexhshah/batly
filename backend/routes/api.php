@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\TeamInviteController;
 use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\TournamentChatController;
+use App\Http\Controllers\Api\TopUpController;
+use App\Http\Controllers\Api\AdminTopUpController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +26,9 @@ use Illuminate\Support\Facades\Route;
 | All routes are prefixed with /api automatically by Laravel.
 |
 */
+
+// Fallback route named 'login' for Laravel's auth redirection logic
+Route::get('/login', [AuthController::class, 'unauthenticated'])->name('login');
 
 // ── Public Routes ────────────────────────────────────────────────────
 
@@ -42,6 +47,11 @@ Route::middleware(['optional.sanctum', 'throttle:120,1'])->group(function () {
 
 // Public banner endpoints
 Route::middleware('throttle:120,1')->get('/banners', [BannerController::class, 'index']);
+
+Route::middleware('throttle:120,1')->group(function () {
+    Route::get('/top-up/games', [TopUpController::class, 'games']);
+    Route::get('/top-up/games/{slug}/packages', [TopUpController::class, 'packages']);
+});
 
 Route::middleware('throttle:30,1')->get('/health', [HealthController::class, 'show']);
 
@@ -72,6 +82,14 @@ Route::middleware(['auth:sanctum', 'active.account', 'throttle:120,1'])->group(f
     Route::post('/tournaments/{tournament}/leave', [TournamentController::class, 'leave']);
     Route::patch('/tournaments/{tournament}/ready', [TournamentController::class, 'setReady']);
     Route::post('/tournaments', [TournamentController::class, 'store']);
+    Route::get('/tournaments/my', [TournamentController::class, 'myTournaments']);
+
+    // Game top-up orders
+    Route::post('/top-up/orders', [TopUpController::class, 'createOrder']);
+    Route::get('/top-up/orders', [TopUpController::class, 'indexOrders']);
+    Route::get('/top-up/orders/{order}', [TopUpController::class, 'showOrder']);
+    Route::post('/top-up/orders/{order}/pay/wallet', [TopUpController::class, 'payWallet']);
+    Route::post('/top-up/orders/{order}/pay/esewa', [TopUpController::class, 'payEsewa']);
 
     // Team invites (2v2 / 3v3 / 4v4)
     Route::get('/tournaments/{tournament}/team-invites', [TeamInviteController::class, 'index']);
@@ -88,6 +106,7 @@ Route::middleware(['auth:sanctum', 'active.account', 'throttle:120,1'])->group(f
     Route::get('/tournaments/{tournament}/chat/status', [TournamentChatController::class, 'status']);
     Route::get('/tournaments/{tournament}/chat/messages', [TournamentChatController::class, 'messages']);
     Route::post('/tournaments/{tournament}/chat/messages', [TournamentChatController::class, 'send']);
+    Route::delete('/tournaments/{tournament}/chat/messages/{message}', [TournamentChatController::class, 'destroy']);
 
     // Tournament management (owner only)
     Route::delete('/tournaments/{tournament}/participants/{user}', [TournamentController::class, 'removeParticipant']);
@@ -158,7 +177,9 @@ Route::middleware(['auth:sanctum', 'active.account', 'throttle:120,1'])->group(f
 
         Route::post('/admin/tournaments/{tournament}/approve-results', [TournamentController::class, 'approveResults']);
         Route::post('/admin/tournaments/{tournament}/reject-results', [TournamentController::class, 'rejectResults']);
+        Route::post('/admin/tournaments/{tournament}/cancel', [TournamentController::class, 'adminCancel']);
         Route::post('/admin/tournaments/{tournament}/resolve-stop', [MatchFlowController::class, 'resolveStop']);
+        Route::post('/admin/tournaments/{tournament}/match-flow/declare-winner', [MatchFlowController::class, 'declareWinner']);
 
         Route::post('/notifications', [AdminController::class, 'createNotification']);
         Route::delete('/notifications/{notification}', [AdminController::class, 'deleteNotification']);
@@ -189,5 +210,23 @@ Route::middleware(['auth:sanctum', 'active.account', 'throttle:120,1'])->group(f
         Route::post('/banners', [BannerController::class, 'store']);
         Route::post('/banners/{banner}', [BannerController::class, 'update']);
         Route::delete('/banners/{banner}', [BannerController::class, 'destroy']);
+
+        // Home carousel (Zone admin — same handlers as banners)
+        Route::get('/admin/home-carousel', [BannerController::class, 'index']);
+        Route::post('/admin/home-carousel', [BannerController::class, 'store']);
+        Route::post('/admin/home-carousel/{banner}', [BannerController::class, 'update']);
+        Route::delete('/admin/home-carousel/{banner}', [BannerController::class, 'destroy']);
+
+        Route::get('/admin/top-up/games', [AdminTopUpController::class, 'listGames']);
+        Route::post('/admin/top-up/games', [AdminTopUpController::class, 'storeGame']);
+        Route::post('/admin/top-up/games/{game}', [AdminTopUpController::class, 'updateGame']);
+        Route::delete('/admin/top-up/games/{game}', [AdminTopUpController::class, 'deleteGame']);
+        Route::get('/admin/top-up/packages', [AdminTopUpController::class, 'listPackages']);
+        Route::post('/admin/top-up/packages', [AdminTopUpController::class, 'storePackage']);
+        Route::post('/admin/top-up/packages/{package}', [AdminTopUpController::class, 'updatePackage']);
+        Route::delete('/admin/top-up/packages/{package}', [AdminTopUpController::class, 'deletePackage']);
+        Route::get('/admin/top-up/orders', [AdminTopUpController::class, 'listOrders']);
+        Route::post('/admin/top-up/orders/{order}/complete', [AdminTopUpController::class, 'completeOrder']);
+        Route::post('/admin/top-up/orders/{order}/reject', [AdminTopUpController::class, 'rejectOrder']);
     });
 });
