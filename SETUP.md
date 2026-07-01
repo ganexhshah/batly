@@ -37,6 +37,24 @@ Seeded admin login:
 
 ## Admin Portal
 
+### Docker (recommended — runs with the API)
+
+From `backend/`:
+
+```powershell
+# Local
+.\deploy.ps1
+
+# Production (goscrim) — Linux server
+export NEXT_PUBLIC_API_BASE_URL=https://api.goscrim.live/api
+export NEXT_PUBLIC_BACKEND_BASE_URL=https://api.goscrim.live
+./deploy.sh
+```
+
+Zone admin: `http://localhost:3000`
+
+### Local dev (without Docker)
+
 ```powershell
 cd zone
 copy .env.example .env.local

@@ -177,6 +177,23 @@ services:
     networks:
       - battly
 
+  # ── Zone Admin (Next.js) ───────────────────────────────────────────
+  zone:
+    build:
+      context: ../zone
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8888/api}
+        NEXT_PUBLIC_BACKEND_BASE_URL: ${NEXT_PUBLIC_BACKEND_BASE_URL:-http://localhost:8888}
+    container_name: battly_zone
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - nginx
+    networks:
+      - battly
+
 # ── Volumes ────────────────────────────────────────────────────────────
 volumes:
   pg_data:
